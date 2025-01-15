@@ -1,0 +1,10 @@
+
+**/.DS_Store
+
+# vendor build stuff
+output
+.vendor
+
+# XCode
+xcuserdata
+
