@@ -16,9 +16,14 @@ struct AppFeature {
   @ObservableState
   struct State: Equatable {
     @Presents var childSheet: ChildFeature.State?
+    var child: ChildFeature.State?
+    var isChildPresent: Bool { child != nil }
   }
   
   enum Action {
+    case child(ChildFeature.Action)
+    case isChildPresent(Bool)
+    case childClicked
     case childSheetClicked
     case childSheet(PresentationAction<ChildFeature.Action>)
   }
@@ -27,8 +32,16 @@ struct AppFeature {
     Reduce { state, action in
       switch action {
 
+      case .childClicked:
+        state.child = .init(name: "Child Sheet (TCA Optional Child)")
+        return .none
+        
       case .childSheetClicked:
-        state.childSheet = .init(name: "Child Sheet (TCA)")
+        state.childSheet = .init(name: "Child Sheet (TCA Presentation)")
+        return .none
+        
+      case .isChildPresent(let isPresent):
+        state.child = nil
         return .none
         
       default:
@@ -38,18 +51,39 @@ struct AppFeature {
     .ifLet(\.$childSheet, action: \.childSheet) {
       ChildFeature()
     }
+    .ifLet(\.child, action: \.child) {
+      ChildFeature()
+    }
   }
 }
 
 struct AppView: View {
   @Bindable var store: StoreOf<AppFeature>
   @State var isShowingSheet = false
+  @State var isShowingIsolatedStoreSheet = false
   
   var body: some View {
     VStack {
-      Button("Child Sheet (TCA)", action: { store.send(.childSheetClicked) } )
+      Button("Child Sheet (TCA Presentation)", action: { store.send(.childSheetClicked) } )
         .padding()
         .sheet(item: $store.scope(state: \.childSheet, action: \.childSheet)) { store in
+          ChildView(store: store)
+        }
+      
+      Button("Child Sheet (TCA Optional Child)", action: { store.send(.childClicked) } )
+        .padding()
+        .sheet(isPresented: $store.isChildPresent.sending(\.isChildPresent)) {
+          if let store = store.scope(state: \.child, action: \.child) {
+            ChildView(store: store)
+          }
+        }
+      
+      Button("Child Sheet (TCA isolated store)", action: { isShowingSheet.toggle()})
+        .padding()
+        .sheet(isPresented: $isShowingIsolatedStoreSheet) {
+          let store = Store(initialState: .init(name: "Child Sheet (TCA isolated store)")) {
+            ChildFeature()
+          }
           ChildView(store: store)
         }
       
