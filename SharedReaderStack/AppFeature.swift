@@ -40,7 +40,7 @@ struct AppFeature {
         state.childSheet = .init(name: "Child Sheet (TCA Presentation)")
         return .none
         
-      case .isChildPresent(let isPresent):
+      case .isChildPresent(_):
         state.child = nil
         return .none
         
